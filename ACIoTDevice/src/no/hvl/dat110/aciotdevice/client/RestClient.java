@@ -7,124 +7,119 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.Scanner;
 
 public class RestClient {
 
-	Gson gson;
+    private static String logpath = "/accessdevice/log";
+    private static String codepath = "/accessdevice/code";
+    Gson gson;
 
-	public RestClient() {
-		// TODO Auto-generated constructor stub
-		gson = new Gson();
-	}
+    public RestClient() {
+        // TODO Auto-generated constructor stub
+        gson = new Gson();
+    }
 
-	private static String logpath = "/accessdevice/log";
+    public void doPostAccessEntry(String message) {
 
-	public void doPostAccessEntry(String message) {
+        // TODO: implement a HTTP POST on the service to post the message
+        AccessMessage accessMessage = new AccessMessage(message);
 
-		// TODO: implement a HTTP POST on the service to post the message
-		AccessMessage accessMessage = new AccessMessage(message);
+        try (Socket s = new Socket(Configuration.host, Configuration.port)) {
+            String jsonbody = gson.toJson(accessMessage);
 
-		try(Socket s = new Socket(Configuration.host, Configuration.port)){
-			String jsonbody = gson.toJson(accessMessage);
-
-			String httpputrequest =
-					"PUT " + logpath + " HTTP/1.1\r\n" +
-							"Host: " + Configuration.host + "\r\n" +
-							"Content-Type application/json\r\n" +
-							"Content-length: " + jsonbody.length() + "\r\n" +
-							"Connection: close\r\n" +
-							"\r\n" +
-							jsonbody +
-							"\r\n";
-
-			OutputStream output = s.getOutputStream();
-
-			PrintWriter pw = new PrintWriter(output, false);
-
-			pw.print(httpputrequest);
-			pw.flush();
-
-			InputStream in = s.getInputStream();
-
-			Scanner scan = new Scanner(in);
-			StringBuilder jsonResponse = new StringBuilder();
-			boolean header = true;
-
-			while(scan.hasNext()){
-				String nextLine = scan.nextLine();
-
-				if (header){
-					System.out.println(nextLine);
-				}else {
-					jsonResponse.append(nextLine);
-				}
-
-				if (nextLine.isEmpty()){
-					header = false;
-				}
-			}
-
-			scan.close();
-
-		} catch (IOException ex){
-			System.err.println(ex);
-		}
+            String httpputrequest =
+                    "PUT " + logpath + " HTTP/1.1\r\n" +
+                            "Host: " + Configuration.host + "\r\n" +
+                            "Content-Type application/json\r\n" +
+                            "Content-length: " + jsonbody.length() + "\r\n" +
+                            "Connection: close\r\n" +
+                            "\r\n" +
+                            jsonbody +
+                            "\r\n";
 
 
-	}
-	
-	private static String codepath = "/accessdevice/code";
-	
-	public AccessCode doGetAccessCode() {
+            OutputStream output = s.getOutputStream();
 
-		AccessCode code = new AccessCode();
+            PrintWriter pw = new PrintWriter(output, false);
 
-		try(Socket s = new Socket(Configuration.host, Configuration.port)) {
-			String httpgetrequest = "GET " + codepath + "HTTP/1.1\r\n" + "Accept: application/json\r\n"
-			 + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
+            pw.print(httpputrequest);
+            pw.flush();
 
-			OutputStream out = s.getOutputStream();
+            InputStream in = s.getInputStream();
 
-			PrintWriter pw = new PrintWriter(out, false);
+            Scanner scan = new Scanner(in);
+            StringBuilder jsonResponse = new StringBuilder();
+            boolean header = true;
 
-			pw.print(httpgetrequest);
-			pw.flush();
+            while (scan.hasNext()) {
+                String nextLine = scan.nextLine();
 
-			InputStream in = s.getInputStream();
+                if (header) {
+                    System.out.println(nextLine);
+                } else {
+                    jsonResponse.append(nextLine);
+                }
 
-			Scanner scan = new Scanner(in);
+                if (nextLine.isEmpty()) {
+                    header = false;
+                }
+            }
 
-			StringBuilder jsonresponse = new StringBuilder();
-			boolean header = true;
-			while(scan.hasNext()){
-				String nextLine = scan.nextLine();
+            scan.close();
 
-				if (header){
-				//	System.out.println(nextLine);
-				} else{
-					jsonresponse.append(nextLine);
-				}
-
-				if (nextLine.isEmpty()) {
-					header = false;
-				}
-			}
-
-			code = gson.fromJson(jsonresponse.toString(), AccessCode.class);
-
-			scan.close();
-
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+        } catch (IOException ex) {
+            System.err.println(ex);
+        }
 
 
-		// TODO: implement a HTTP GET on the service to get current access code
-		
-		return code;
-	}
+    }
+
+    public AccessCode doGetAccessCode() {
+
+        AccessCode code = new AccessCode();
+
+        try (Socket s = new Socket(Configuration.host, Configuration.port)) {
+            String httpgetrequest = "GET " + codepath + "HTTP/1.1\r\n" + "Accept: application/json\r\n"
+                    + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
+
+            OutputStream out = s.getOutputStream();
+
+            PrintWriter pw = new PrintWriter(out, false);
+
+            pw.print(httpgetrequest);
+            pw.flush();
+
+            InputStream in = s.getInputStream();
+
+            Scanner scan = new Scanner(in);
+
+            StringBuilder jsonresponse = new StringBuilder();
+            boolean header = true;
+            while (scan.hasNext()) {
+                String nextLine = scan.nextLine();
+                if (header) {
+                    //	System.out.println(nextLine);
+                } else {
+                    jsonresponse.append(nextLine);
+                }
+
+                if (nextLine.isEmpty()) {
+                    header = false;
+                }
+            }
+
+            code = gson.fromJson(jsonresponse.toString(), AccessCode.class);
+
+            scan.close();
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+
+        // TODO: implement a HTTP GET on the service to get current access code
+
+        return code;
+    }
 }
