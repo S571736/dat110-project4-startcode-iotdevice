@@ -1,13 +1,13 @@
 package no.hvl.dat110.aciotdevice.client;
 
 import com.google.gson.Gson;
-import com.sun.xml.internal.ws.api.pipe.ContentType;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.Scanner;
 
 public class RestClient {
@@ -79,8 +79,50 @@ public class RestClient {
 	
 	public AccessCode doGetAccessCode() {
 
-		AccessCode code = null;
-		
+		AccessCode code = new AccessCode();
+
+		try(Socket s = new Socket(Configuration.host, Configuration.port)) {
+			String httpgetrequest = "GET " + codepath + "HTTP/1.1\r\n" + "Accept: application/json\r\n"
+			 + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
+
+			OutputStream out = s.getOutputStream();
+
+			PrintWriter pw = new PrintWriter(out, false);
+
+			pw.print(httpgetrequest);
+			pw.flush();
+
+			InputStream in = s.getInputStream();
+
+			Scanner scan = new Scanner(in);
+
+			StringBuilder jsonresponse = new StringBuilder();
+			boolean header = true;
+			while(scan.hasNext()){
+				String nextLine = scan.nextLine();
+
+				if (header){
+				//	System.out.println(nextLine);
+				} else{
+					jsonresponse.append(nextLine);
+				}
+
+				if (nextLine.isEmpty()) {
+					header = false;
+				}
+			}
+
+			code = gson.fromJson(jsonresponse.toString(), AccessCode.class);
+
+			scan.close();
+
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+
 		// TODO: implement a HTTP GET on the service to get current access code
 		
 		return code;
