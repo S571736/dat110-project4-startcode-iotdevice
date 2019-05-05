@@ -13,11 +13,11 @@ public class RestClient {
 
     private static String logpath = "/accessdevice/log";
     private static String codepath = "/accessdevice/code";
-    Gson gson;
+
 
     public RestClient() {
         // TODO Auto-generated constructor stub
-        gson = new Gson();
+
     }
 
     public void doPostAccessEntry(String message) {
@@ -26,28 +26,26 @@ public class RestClient {
         AccessMessage accessMessage = new AccessMessage(message);
 
         try (Socket s = new Socket(Configuration.host, Configuration.port)) {
+            Gson gson = new Gson();
             String jsonbody = gson.toJson(accessMessage);
 
             String httpputrequest =
-                    "PUT " + logpath + " HTTP/1.1\r\n" +
+                    "POST " + logpath + " HTTP/1.1\r\n" +
                             "Host: " + Configuration.host + "\r\n" +
-                            "Content-Type application/json\r\n" +
+                            "Content-Type: application/json\r\n" +
                             "Content-length: " + jsonbody.length() + "\r\n" +
                             "Connection: close\r\n" +
                             "\r\n" +
                             jsonbody +
                             "\r\n";
 
-
             OutputStream output = s.getOutputStream();
 
             PrintWriter pw = new PrintWriter(output, false);
-
             pw.print(httpputrequest);
             pw.flush();
 
             InputStream in = s.getInputStream();
-
             Scanner scan = new Scanner(in);
             StringBuilder jsonResponse = new StringBuilder();
             boolean header = true;
@@ -56,7 +54,7 @@ public class RestClient {
                 String nextLine = scan.nextLine();
 
                 if (header) {
-                    System.out.println(nextLine);
+                    // System.out.println(nextLine);
                 } else {
                     jsonResponse.append(nextLine);
                 }
@@ -65,7 +63,7 @@ public class RestClient {
                     header = false;
                 }
             }
-
+            System.out.println(jsonResponse.toString());
             scan.close();
 
         } catch (IOException ex) {
@@ -77,46 +75,49 @@ public class RestClient {
 
     public AccessCode doGetAccessCode() {
 
-        AccessCode code = new AccessCode();
+        AccessCode code = null;
 
         try (Socket s = new Socket(Configuration.host, Configuration.port)) {
-            String httpgetrequest = "GET " + codepath + "HTTP/1.1\r\n" + "Accept: application/json\r\n"
+            // construct the GET request
+            String httpgetrequest = "GET " + codepath + " HTTP/1.1\r\n"
+                    + "Accept: application/json\r\n"
                     + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
 
-            OutputStream out = s.getOutputStream();
+            // sent the HTTP request
+            OutputStream output = s.getOutputStream();
 
-            PrintWriter pw = new PrintWriter(out, false);
-
+            PrintWriter pw = new PrintWriter(output, false);
             pw.print(httpgetrequest);
             pw.flush();
 
+            // read the HTTP response
             InputStream in = s.getInputStream();
 
             Scanner scan = new Scanner(in);
-
             StringBuilder jsonresponse = new StringBuilder();
             boolean header = true;
-            while (scan.hasNext()) {
-                String nextLine = scan.nextLine();
-                if (header) {
-                    //	System.out.println(nextLine);
-                } else {
-                    jsonresponse.append(nextLine);
-                }
 
-                if (nextLine.isEmpty()) {
+            while (scan.hasNext()) {
+                String nextline = scan.nextLine();
+                if (header) {
+                    // System.out.println(nextline);
+                } else {
+                    jsonresponse.append(nextline);
+                }
+                // simplified approach to identifying start of body: the empty line
+                if (nextline.isEmpty()) {
                     header = false;
                 }
             }
-
+            Gson gson = new Gson();
             code = gson.fromJson(jsonresponse.toString(), AccessCode.class);
 
+            System.out.println(jsonresponse.toString());
             scan.close();
 
         } catch (IOException ex) {
             ex.printStackTrace();
         }
-
 
         // TODO: implement a HTTP GET on the service to get current access code
 
